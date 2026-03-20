@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - SmartBook</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme=color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+    </style>
+</head>
+<script type="module">
+import { auth } from "./database.js";
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+onAuthStateChanged(auth, (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+    } else {
+        console.log("User is logged in:", user.uid);
+
+        // ✅ OPTIONAL: keep localStorage in sync
+        localStorage.setItem("currentUser", user.uid);
+    }
+});
+</script>
+<body class="bg-gray-50">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-effect border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="index.html" class="flex items-center space-x-2">
+                    <i data-lucide="calendar-check" class="w-8 h-8 text-indigo-600"></i>
+                    <span class="text-xl font-bold text-gray-900">SmartBook</span>
+                </a>
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="text-gray-700 hover:text-indigo-600 font-medium transition">Home</a>
+                    <a href="index.html#services" class="text-gray-700 hover:text-indigo-600 font-medium transition">Services</a>
+                    <a href="booking.html" class="text-indigo-600 font-medium transition">Book Now</a>
+                    <a href="dashboard.html" class="text-gray-700 hover:text-indigo-600 font-medium transition">My Appointments</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Booking Section -->
+    <section class="pt-32 pb-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">Book Your Appointment</h1>
+                <p class="text-gray-600">Fill in the details below to schedule your appointment with automatic duration tracking.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+                <div class="grid md:grid-cols-5">
+                    <!-- Sidebar -->
+                    <div class="md:col-span-2 gradient-bg p-8 text-white">
+                        <h3 class="text-2xl font-bold mb-6">Booking Details</h3>
+                        <div class="space-y-6">
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="info" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <div>
+                                    <p class="font-medium">Automatic Alerts</p>
+                                    <p class="text-sm text-indigo-200">You'll receive notifications when your appointment ends</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="clock" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <div>
+                                    <p class="font-medium">Duration Tracking</p>
+                                    <p class="text-sm text-indigo-200">Real-time countdown in your dashboard</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start space-x-3">
+                                <i data-lucide="bell" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <div>
+                                    <p class="font-medium">Smart Reminders</p>
+                                    <p class="text-sm text-indigo-200">Browser and sound alerts included</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-12 p-4 bg-white/10 rounded-xl backdrop-blur">
+                            <p class="text-sm font-medium mb-2">Selected Service</p>
+                            <p id="selectedServiceDisplay" class="text-lg font-bold">...</p>
+                        </div>
+                    </div>
+
+                    <!-- Form -->
+                    <div class="md:col-span-3 p-8">
+                        <form id="bookingForm" class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
+                                <select id="serviceSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                    <option value="Washing Machine">Washing Machine</option>
+                                    <option value="Drying Machine">Drying Machine</option>
+                                    <option value="Both">Dryer & Washing Machine</option>
+                                    <option value="Maintenance Support">Maintenance Support</option>
+                                </select>
+                            </div>
+                            <div id="floorCont">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
+                                <select id="floorSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                    <option value="1st floor">1st Floor</option>
+                                    <option value="3rd floor">3rd Floor</option>
+                                    <option value="5th floor">5th Floor</option>
+                                </select>
+                            </div>
+
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                                    <input type="date" id="dateInput" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
+                                    <select id="timeInput" class="w-full px-4 py-2 border rounded-lg"></select>
+                                </div>
+                            </div>
+
+                            <div id="durationContainer">
+                                <label id="durationTaxt" class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
+                                <select id="durationSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                    <option value="30">30 minutes</option>
+                                    <option value="60" selected>1 hour</option>
+                                </select>
+                                <p id="durationText" class="text-xs text-gray-500 mt-1">You'll be alerted when this duration ends</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+                                <textarea id="notesField" rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" placeholder="Any special requirements..."></textarea>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="enableAlerts" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                <label for="enableAlerts" class="text-sm text-gray-700">Enable end-of-duration alerts (sound + notification)</label>
+                            </div>
+
+                            <button type="submit"  class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                                Confirm Booking
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center animate-fade-in">
+            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check" class="w-10 h-10 text-green-600"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+            <p class="text-gray-600 mb-6">Your appointment has been scheduled. You'll receive alerts when the duration ends.</p>
+            <div class="space-y-3">
+                <a href="dashboard.html" class="block w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">
+                    View Dashboard
+                </a>
+                <button onclick="closeModal()" class="block w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                    Book Another
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script type="module">
+import { auth, saveBooking, isSlotAvailable, getUserData,getBookingsByDate } from "./database.js";
+import { onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+lucide.createIcons();
+
+const allTimeSlots = [
+"00:00","00:30","01:00","01:30","02:00","02:30","03:00","03:30",
+"04:00","04:30","05:00","05:30","06:00","06:30","07:00","07:30",
+"08:00","08:30","09:00","09:30","10:00","10:30","11:00","11:30",
+"12:00","12:30","13:00","13:30","14:00","14:30","15:00","15:30",
+"16:00","16:30","17:00","17:30","18:00","18:30","19:00","19:30",
+"20:00","20:30","21:00","21:30","22:00","22:30","23:00","23:30"
+];
+
+const maintenanceSlots = [
+"08:00","08:30","09:00","09:30","10:00","10:30",
+"11:00","11:30","12:00","12:30","13:00","13:30",
+"14:00","14:30","15:00","15:30","16:00","16:30","17:00"
+];
+let resolveUserReady;
+const userReady = new Promise(resolve =>{
+    resolveUserReady = resolve;
+});
+let currentUser = null;
+let currentUserData = null;
+
+// 🔐 AUTH
+onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+        window.location.href = "login.html";
+    } else {
+        currentUser = user;
+        currentUserData = await getUserData(user.uid);
+        console.log("User is logged in:", currentUserData);
+        resolveUserReady();
+    }
+});
+function populateTimeSlots(service) {
+    const timeSelect = document.getElementById("timeInput");
+    timeSelect.innerHTML = ""; // clear existing
+
+    const slots = service === "Maintenance Support"
+        ? maintenanceSlots
+        : allTimeSlots;
+
+    slots.forEach(time => {
+        const option = document.createElement("option");
+        option.value = time;
+        option.textContent = time;
+        timeSelect.appendChild(option);
+    });
+}
+async function updateAvailableSlots() {
+    const service = document.getElementById("serviceSelect").value;
+    const floor = document.getElementById("floorSelect").value;
+    const date = document.getElementById("dateInput").value;
+
+    if (!date) return;
+
+    // 🔥 Get all bookings for that date
+    const existingBookings = await getBookingsByDate(date);
+
+    const timeSelect = document.getElementById("timeInput");
+    const options = timeSelect.querySelectorAll("option");
+
+    options.forEach(option => {
+        option.disabled = false;
+
+        const slotTime = option.value;
+        const slotStart = new Date(`${date}T${slotTime}`);
+        const slotEnd = new Date(slotStart.getTime() + 30 * 60000);
+
+    const isTaken = existingBookings.some(b => {
+    if (b.service !== service || b.floor !== floor) return false;
+
+    const existingStart = new Date(b.startTime);
+    const existingEnd = new Date(b.endTime);
+
+    return slotStart < existingEnd && slotEnd > existingStart;
+}); if(isTaken){
+    option.disabled = true;
+    option.textContent = `${slotTime} `
+}else{
+    option.textContent = slotTime;
+}
+});
+}
+document.getElementById("dateInput").addEventListener("change", updateAvailableSlots);
+document.getElementById("serviceSelect").addEventListener("change", updateAvailableSlots);
+document.getElementById("floorSelect").addEventListener("change", updateAvailableSlots);
+
+
+// 📅 MIN DATE
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('dateInput').min = today;
+
+// 🎯 SERVICE DISPLAY
+const selectedService = localStorage.getItem('selectedService');
+if (selectedService) {
+    document.getElementById('serviceSelect').value = selectedService;
+    document.getElementById('selectedServiceDisplay').textContent = selectedService;
+}
+
+const serviceSelect = document.getElementById("serviceSelect");
+const durationContainer = document.getElementById("durationContainer"); 
+const floorContainer = document.getElementById('floorCont');
+const notesField = document.getElementById("notesField");
+serviceSelect.addEventListener("change",async  function () {
+    const selectedService = this.value;
+
+    // Update UI
+    document.getElementById('selectedServiceDisplay').textContent = selectedService;
+
+    // Update time slots 🔥
+    populateTimeSlots(selectedService);
+    await updateAvailableSlots();
+
+    if (selectedService === "Maintenance Support") {
+        durationContainer.style.display = "none";
+        floorContainer.style.display = "none";
+        notesField.required = true;
+    } else {
+        durationContainer.style.display = "block";
+        floorContainer.style.display = "block";
+        notesField.required = false;
+    }
+});
+
+// 🧠 SUBMIT
+document.getElementById('bookingForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await userReady;
+    const selectedService = document.getElementById("serviceSelect").value;
+
+    const formData = {
+        service: document.getElementById('serviceSelect').value,
+        floor: document.getElementById('floorSelect').value,
+        date: document.getElementById('dateInput').value,
+        time: document.getElementById('timeInput').value,
+        roomNumber: currentUserData.roomNumber,
+        duration: selectedService === "Maintenance Support"
+        ? 30
+        : parseInt(document.getElementById('durationSelect').value),
+        notes: this.querySelector('textarea').value,
+        alertsEnabled: document.getElementById('enableAlerts').checked,
+        status: 'upcoming'
+    };
+
+    // 🔧 Maintenance validation
+    if (formData.service === "Maintenance Support" && !formData.notes.trim()) {
+        alert("Please describe the maintenance issue.");
+        return;
+    }
+
+    // ⏱ TIME
+    const startDateTime = new Date(`${formData.date}T${formData.time}`);
+    formData.startTime = startDateTime.toISOString();
+    formData.endTime = new Date(
+        startDateTime.getTime() + formData.duration * 60000
+    ).toISOString();
+
+    // 🚫 PREVENT DOUBLE BOOKING (FIXED LOCATION)
+    const available = await isSlotAvailable(formData);
+
+    if (!available) {
+        alert("❌ This slot is already booked for this floor and machine.");
+        return;
+    }
+
+    try {
+        await saveBooking(formData); // ✅ FIXED
+
+        document.getElementById('successModal').classList.remove('hidden');
+        document.getElementById('successModal').classList.add('flex');
+
+        this.reset();
+    } catch (error) {
+        console.error(error);
+        alert("Error saving booking");
+    }
+});
+
+// 🔧 MODAL
+window.closeModal = function () {
+    document.getElementById('successModal').classList.add('hidden');
+    document.getElementById('successModal').classList.remove('flex');
+};
+window.addEventListener("DOMContentLoaded",async ()=>{
+    const service = document.getElementById("serviceSelect").value;
+    populateTimeSlots(service);
+    await updateAvailableSlots();
+});
+const btn = document.querySelector("button[type='submit']");
+btn.disabled = true;
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        currentUser = user;
+        currentUserData = await getUserData(user.uid);
+
+        btn.disabled = false; // ✅ enable
+        resolveUserReady();
+    }
+});
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js")
+    .then(() => console.log("Service Worker Registered"))
+    .catch(err => console.error("SW failed:", err));
+}
+</script>
+</body>
+</html>

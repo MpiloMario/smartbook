@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Register - SmartBook</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme=color" content="#4f46e5">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="flex items-center justify-center h-screen bg-gray-100">
+
+<div class="bg-white p-8 rounded-xl shadow-lg w-96">
+    <h2 class="text-2xl font-bold mb-6 text-center">Create Account</h2>
+
+    <input id="username" type="text" placeholder="Username"
+        class="w-full mb-4 px-4 py-2 border rounded-lg">    
+
+    <input id="roomNumber" type="text" placeholder="Room number"
+        class="w-full mb-4 px-4 py-2 border rounded-lg">
+
+    <input id="email" type="email" placeholder="Email"
+        class="w-full mb-4 px-4 py-2 border rounded-lg">
+
+    <input id="password" type="password" placeholder="Password"
+        class="w-full mb-4 px-4 py-2 border rounded-lg">
+
+    <input id="confirmPassword" type="password" placeholder="Confirm Password"
+        class="w-full mb-6 px-4 py-2 border rounded-lg">
+
+    <button id="registerBtn"
+        class="w-full bg-indigo-600 text-white py-2 rounded-lg">
+        Register
+    </button>
+
+    <p class="text-sm text-center mt-4">
+        Already have an account?
+        <a href="login.html" class="text-indigo-600">Login</a>
+    </p>
+</div>
+<script type="module" src="register.js"></script>
+</body>
+</html>
