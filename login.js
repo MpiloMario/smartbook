@@ -1,4 +1,4 @@
-import { loginUser, signInWithGoogle } from "./database.js";
+import { loginUser} from "./database.js";
 
 document.getElementById("loginBtn").addEventListener("click", async () => {
     const email = document.getElementById("email").value; // FIXED
@@ -14,20 +14,6 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
     } catch (error) {
         alert(error.message);
     }
-});
-document.getElementById("googleLoginBtn").addEventListener("click", async () => {
-    try {
-        const result = await signInWithGoogle();
-
-        localStorage.setItem("currentUser", result.user.uid);
-
-        alert("Logged in as " + result.user.displayName);
-        window.location.href = "index.html";
-
-    } catch (error) {
-    console.error("GOOGLE ERROR:", error); // 👈 IMPORTANT
-    alert(error.message);
-}
 });
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")

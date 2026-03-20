@@ -18,9 +18,6 @@ import {
     query,
     where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import {
-     GoogleAuthProvider, signInWithPopup 
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   // TODO: Add SDKs for Firebase products that you want to use
   // https://firebase.google.com/docs/web/setup#available-libraries
 
