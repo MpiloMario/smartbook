@@ -238,7 +238,21 @@ function requestNotificationPermission() {
         }
     }
     document.getElementById('alert').addEventListener('click',requestNotificationPermission);
+function notifyUser(message) {
+    // 🔔 Browser notification
+    if (Notification.permission === "granted") {
+        new Notification("SmartBook", {
+            body: message,
+            icon: "icons/icon-256.png"
+        });
+    }
 
+    // 🔊 Sound (only works if user interacted before)
+    const audio = new Audio("images/alert.mp3");
+    audio.play().catch(() => {
+        console.log("Sound blocked until user interacts");
+    });
+}
 // 📊 UPDATE STATS
 function updateStats() {
     const now = new Date();
@@ -358,18 +372,6 @@ function renderBookings() {
     }).join("");
 
     lucide.createIcons();
-    const sound = document.getElementById('alertSound');
-
-    sound.currentTime = 0; // restart sound
-    sound.play().catch(() => {
-        console.warn("Sound blocked by browser");
-    });
-    document.addEventListener("click", () => {
-        sound.play().then(() => {
-            sound.pause();
-            sound.currentTime = 0;
-        }).catch(() => {});
-    }, { once: true });
     
 }
 if ("serviceWorker" in navigator) {

@@ -60,21 +60,7 @@ export async function registerUser(email, password,username, room) {
 export async function loginUser(email, password) {
     return await signInWithEmailAndPassword(auth, email, password);
 }
-export async function signInWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
 
-    const user = result.user;
-
-    // 🔥 Save user in Firestore (if not exists)
-    await setDoc(doc(db, "users", user.uid), {
-        email: user.email,
-        name: user.displayName,
-        createdAt: new Date().toISOString()
-    }, { merge: true });
-
-    return result;
-}
 // 📌 SAVE BOOKING
 export async function saveBooking(formData) {
     try {
