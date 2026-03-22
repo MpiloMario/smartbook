@@ -69,7 +69,7 @@ export async function saveBooking(formData) {
         await addDoc(collection(db, "bookings"), {
             ...formData,
             userId: user.uid,          // ✅ FIXED
-            email: user.email         // ✅ store email
+            email: user.email,         // ✅ store email
         });
 
         console.log("Booking saved!");
