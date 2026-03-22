@@ -15,6 +15,7 @@ import {
     getDoc,
     doc,
     setDoc,
+    deleteDoc,
     query,
     where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -111,7 +112,6 @@ export async function isSlotAvailable(newBooking) {
         collection(db, "bookings"),
         where("date", "==", newBooking.date),
         where("floor", "==", newBooking.floor),
-        where("service", "==", newBooking.service)
     );
 
     const snapshot = await getDocs(q);
@@ -158,4 +158,8 @@ export async function getUserData(uid){
     }else{
         return null;
     }
+}
+export async function deleteBooking(id) {
+    await deleteDoc(doc(db,"bookings",id));
+    
 }

@@ -251,10 +251,15 @@ async function updateAvailableSlots() {
 
         const slotTime = option.value;
         const slotStart = new Date(`${date}T${slotTime}`);
-        const slotEnd = new Date(slotStart.getTime() + 30 * 60000);
-
+        let duration = 30;
+        if(service === "Both") duration = 90;
+        const slotEnd  =new Date(slotStart.getTime() + duration*60000);
     const isTaken = existingBookings.some(b => {
-    if (b.service !== service || b.floor !== floor) return false;
+    const isSameMachine =
+        service === "Both" ||
+        b.service === "Both" ||
+        b.service === service;
+    if (!isSameMachine || b.floor !== floor) return false;
 
     const existingStart = new Date(b.startTime);
     const existingEnd = new Date(b.endTime);
@@ -302,7 +307,11 @@ serviceSelect.addEventListener("change",async  function () {
         durationContainer.style.display = "none";
         floorContainer.style.display = "none";
         notesField.required = true;
-    } else {
+    } else if(selectedService ==="Both"){
+        durationContainer.style.display = "none";
+        floorContainer.style.display = "block";
+        notesField.required = false;
+    }else {
         durationContainer.style.display = "block";
         floorContainer.style.display = "block";
         notesField.required = false;
@@ -314,16 +323,22 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     e.preventDefault();
     await userReady;
     const selectedService = document.getElementById("serviceSelect").value;
+    let duration;
 
+    if (selectedService === "Maintenance Support") {
+        duration = 30;
+    } else if (selectedService === "Both") {
+        duration = 90; // ✅ 1hr30min
+    } else {
+        duration = parseInt(document.getElementById('durationSelect').value);
+    }
     const formData = {
         service: document.getElementById('serviceSelect').value,
         floor: document.getElementById('floorSelect').value,
         date: document.getElementById('dateInput').value,
         time: document.getElementById('timeInput').value,
         roomNumber: currentUserData.roomNumber,
-        duration: selectedService === "Maintenance Support"
-        ? 30
-        : parseInt(document.getElementById('durationSelect').value),
+        duration: duration,
         notes: this.querySelector('textarea').value,
         alertsEnabled: document.getElementById('enableAlerts').checked,
         status: 'upcoming'
@@ -341,7 +356,7 @@ document.getElementById('bookingForm').addEventListener('submit', async function
     formData.endTime = new Date(
         startDateTime.getTime() + formData.duration * 60000
     ).toISOString();
-
+    scheduleNotifications(formData);
     // 🚫 PREVENT DOUBLE BOOKING (FIXED LOCATION)
     const available = await isSlotAvailable(formData);
 
@@ -362,6 +377,48 @@ document.getElementById('bookingForm').addEventListener('submit', async function
         alert("Error saving booking");
     }
 });
+function showLocalNotification(title, body) {
+    if (Notification.permission === "granted") {
+        new Notification(title, {
+            body: body,
+            icon: "/icons/icon-192.png"
+        });
+
+        const audio = new Audio("images/alarm.wav");
+        audio.play().catch(() => {});
+    }
+}
+function scheduleNotifications(formData){
+    if(!formData.alertsEnabled) return;
+
+    const now = Date.now();
+    const start = new Date(formData.startTime).getTime();
+    const end = new Date(formData.endTime).getTime();
+
+    const fiveMin = 5*60*1000;
+
+    const startWarning = start - fiveMin;
+    const endWarning = end - fiveMin;
+
+    if (startWarning > now){
+        setTimeout(()=>{
+            showLocalNotification("⏳ Booking Starting Soon", `${formData.service} starts in 5 minutes`);
+        },startWarning-now);
+        }
+     // ⏰ 5 min BEFORE END
+    if (endWarning > now) {
+        setTimeout(() => {
+            showLocalNotification("⚠️ Almost Done", `${formData.service} ends in 5 minutes`);
+        }, endWarning - now);
+    }
+
+    // ⏰ FINISHED
+    if (end > now) {
+        setTimeout(() => {
+            showLocalNotification("✅ Finished", `${formData.service} is done!`);
+        }, end - now);
+    }
+}
 
 // 🔧 MODAL
 window.closeModal = function () {
@@ -385,6 +442,13 @@ onAuthStateChanged(auth, async (user) => {
         resolveUserReady();
     }
 });
+document.addEventListener("click", () => {
+    const audio = new Audio("images/alarm.wav");
+    audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+    }).catch(() => {});
+}, { once: true });
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
     .then(() => console.log("Service Worker Registered"))
