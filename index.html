@@ -37,30 +37,51 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-50 glass-effect border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center space-x-2">
+<!-- Navigation -->
+<nav class="fixed w-full z-50 glass-effect border-b border-gray-200 transition-all duration-300" id="navbar">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+
+            <!-- Logo -->
+                <a href="index.html" class="flex items-center space-x-2">
                     <i data-lucide="calendar-check" class="w-8 h-8 text-indigo-600"></i>
                     <span class="text-xl font-bold text-gray-900">SmartBook</span>
-                </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#home" class="text-gray-700 hover:text-indigo-600 font-medium transition">Home</a>
-                    <a href="#services" class="text-gray-700 hover:text-indigo-600 font-medium transition">Services</a>
-                    <a id="protectedLinks" href="#" onclick="handleProtectedRoute('booking.html')" class="text-gray-700 hover:text-indigo-600 font-medium transition">Book Now</a>
-                    <a id="protectedLinks" href="#" onclick="handleProtectedRoute('dashboard.html')" class="text-gray-700 hover:text-indigo-600 font-medium transition">My Appointments</a>
-                    <a id="loginLink" href="login.html" class="text-indigo-600 font-medium">
-                        Login
-                    </a>
-                </div>
-                <a id="protectedLinks" href="#" onclick="handleProtectedRoute('booking.html')" class="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg hover:shadow-xl">
-                    Book Appointment
                 </a>
-                <button id="Logout" class="bg-red-600 text-white px-6 py-2 rounded-full font-medium hover:bg-indigo-700 transition shadow-lg hover:shadow-xl">Log out</button>
+                <span id="userGreeting" class="text-md text-indigo-600 hidden"></span>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="index.html" class="nav-link text-gray-700 hover:text-indigo-600 transition">Home</a>
+                <a href="index.html#services" class="nav-link text-gray-700 hover:text-indigo-600 transition">Services</a>
+                <a href="booking.html" class="nav-link text-gray-700 hover:text-indigo-600 transition">Book</a>
+                <a href="dashboard.html" class="nav-link text-gray-700 hover:text-indigo-600 transition">Dashboard</a>
+
+                <div id="authSection" class="flex items-center space-x-4">
+                    <!-- Filled dynamically -->
+                </div>
+            </div>
+
+            <!-- Mobile Button -->
+            <div class="md:hidden flex items-center">
+                <button id="mobile-menu-btn" class="p-2 rounded-lg">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
             </div>
         </div>
-    </nav>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden glass-effect border-t border-gray-200">
+        <div class="px-4 pt-2 pb-4 space-y-2">
+            <a href="index.html" class="block px-3 py-2 rounded-md hover:bg-gray-100">Home</a>
+            <a href="index.html#services" class="block px-3 py-2 rounded-md hover:bg-gray-100">Services</a>
+            <a href="booking.html" class="block px-3 py-2 rounded-md hover:bg-gray-100">Book</a>
+            <div id="mobileAuthSection" class="pt-2 border-t">
+                <!-- Filled dynamically -->
+            </div>
+        </div>
+    </div>
+</nav>
 
     <!-- Hero Section -->
     <section id="home" class="pt-32 pb-20 gradient-bg text-white">
@@ -175,7 +196,7 @@
                         <h3 class="font-bold text-lg mb-2">Drying Machine</h3>
                         <div class="flex justify-between items-center">
                             <span class="text-indigo-600 font-bold">10-60min</span>
-                            <button href="#" onclick="handleProtectedRoute('booking.html')"" class="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-200 transition">Book</button>
+                            <button href="#" onclick="handleProtectedRoute('booking.html')" class="text-sm bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-200 transition">Book</button>
                         </div>
                     </div>
                 </div>
@@ -252,45 +273,37 @@
     </footer>
 
 <script type="module">
-import { saveBooking } from "./database.js";
-import { auth } from "./database.js";
+import { saveBooking,getUserData } from "./scripts/database.js";
+import { auth } from "./scripts/database.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-document.getElementById("Logout").addEventListener("click",()=>{
-    signOut(auth).then(()=>{
-        alert("Logged out!");
-        window.location.href = "login.html";
-    });
-});
-
-
 let currentUser = null;
 
-// Track auth state
-onAuthStateChanged(auth, (user) => {
-    currentUser = user;
-    const loginLink = document.getElementById("loginLink");
-
-    if (user) {
-        loginLink.style.display = "none";
-    } else {
-        loginLink.style.display = "block";
-    }
-});
 
 // Handle protected navigation
 window.handleProtectedRoute = function(page) {
     if (!currentUser) {
         alert("Please log in first");
+        window.location.href="login.html";
         return;
     }
 
     window.location.href = page;
 };
 lucide.createIcons();
-        
+//User Greeting
+const greeting = document.getElementById("userGreeting");
+onAuthStateChanged(auth,async (user)=>{
+    if(user){
+        const userData = await getUserData(user.uid);
+        greeting.textContent = `Greetings ${userData?.username || "user"}`;
+        greeting.classList.remove("hidden");
+    }else{
+        greeting.classList.add("hidden");
+    }
+});
 function bookService(serviceName) {
     localStorage.setItem('selectedService', serviceName);
     handleProtectedRoute('booking.html'); // ✅ uses auth check
@@ -300,6 +313,68 @@ if ("serviceWorker" in navigator) {
     .then(() => console.log("Service Worker Registered"))
     .catch(err => console.error("SW failed:", err));
 }
+// Toggle mobile menu
+document.getElementById("mobile-menu-btn").addEventListener("click", () => {
+    document.getElementById("mobile-menu").classList.toggle("hidden");
+});
+
+// Optional: close menu when clicking a link
+document.querySelectorAll("#mobile-menu a").forEach(link => {
+    link.addEventListener("click", () => {
+        document.getElementById("mobile-menu").classList.add("hidden");
+    });
+});
+
+onAuthStateChanged(auth, (user) => {
+    const authSection = document.getElementById("authSection");
+    const mobileAuthSection = document.getElementById("mobileAuthSection");
+
+    if (!authSection || !mobileAuthSection) return;
+
+    if (user) {
+        // ✅ LOGGED IN UI
+        authSection.innerHTML = `
+            <a href="booking.html" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm">
+                Book Now
+            </a>
+            <button id="logoutBtn" class="bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm">
+                Logout
+            </button>
+        `;
+
+        mobileAuthSection.innerHTML = `
+            <a href="dashboard.html" class="block px-3 py-2">Dashboard</a>
+            <button id="logoutBtnMobile" class="block w-full text-left px-3 py-2 text-red-600">
+                Logout
+            </button>
+        `;
+
+    } else {
+        // ❌ NOT LOGGED IN UI
+        authSection.innerHTML = `
+            <a href="login.html" class="text-gray-700 hover:text-indigo-600">Login</a>
+            <a href="register.html" class="bg-indigo-600 text-white px-3 py-2 rounded-lg">
+                Sign Up
+            </a>
+        `;
+
+        mobileAuthSection.innerHTML = `
+            <a href="login.html" class="block px-3 py-2">Login</a>
+            <a href="register.html" class="block px-3 py-2">Sign Up</a>
+        `;
+    }
+
+    // 🔥 LOGOUT HANDLER
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
+    document.getElementById("logoutBtnMobile")?.addEventListener("click", logout);
+});
+
+function logout() {
+    signOut(auth).then(() => {
+        window.location.href = "login.html";
+    });
+}
+
 </script>
 </body>
 </html>
