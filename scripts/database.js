@@ -4,7 +4,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { 
     getAuth, 
     createUserWithEmailAndPassword, 
-    signInWithEmailAndPassword 
+    signInWithEmailAndPassword
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 import { 
@@ -162,4 +162,13 @@ export async function getUserData(uid){
 export async function deleteBooking(id) {
     await deleteDoc(doc(db,"bookings",id));
     
+}
+
+export async function saveUserToken(token) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    await setDoc(doc(db, "users", user.uid), {
+        fcmToken: token
+    }, { merge: true });
 }
