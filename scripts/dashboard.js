@@ -1,4 +1,4 @@
-import { auth, getBookings, getUsers,deleteBooking } from "./database.js";
+import { auth, getBookings, getUsers,deleteBooking,showToast } from "./database.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -105,21 +105,22 @@ function requestNotificationPermission() {
     }
     document.getElementById('alert').addEventListener('click',requestNotificationPermission);
 function notifyUser(message) {
-    // 🔔 Browser notification
-    if (Notification.permission !== "granted") return;
-
-    new Notification("SmartBook", {
+    // 🔔 Browser notification (if permitted)
+    if (Notification.permission === "granted") {
+        new Notification("SmartBook", {
             body: message,
             icon: "icons/icon-256.png"
         });
-    
+    }
 
-    // 🔊 Sound (only works if user interacted before)
+    // 🔊 Sound
     const audio = new Audio("images/alarm.wav");
-    audio.play().catch(() => {
-        console.log("Sound blocked until user interacts");
-    });
+    audio.play().catch(() => {});
+
+    // ✅ Always show in-app toast (works even if notifications are blocked)
+    showToast(message);
 }
+
 // 📊 UPDATE STATS
 function updateStats() {
     const now = new Date();

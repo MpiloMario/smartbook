@@ -1,4 +1,4 @@
-import { auth, saveBooking, isSlotAvailable, getUserData,getBookingsByDate,saveUserToken } from "./database.js";
+import { auth, saveBooking, isSlotAvailable, getUserData,getBookingsByDate,saveUserToken,showToast } from "./database.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getMessaging, getToken, onMessage } 
@@ -197,16 +197,20 @@ document.getElementById('bookingForm').addEventListener('submit', async function
         alert("Error saving booking");
     }
 });
+
 function showLocalNotification(title, body) {
     if (Notification.permission === "granted") {
         new Notification(title, {
             body: body,
             icon: "/icons/icon-192.png"
         });
-
-        const audio = new Audio("images/alarm.wav");
-        audio.play().catch(() => {});
     }
+
+    const audio = new Audio("images/alarm.wav");
+    audio.play().catch(() => {});
+
+    // ✅ Always show toast regardless of permission
+    showToast(`${title}: ${body}`);
 }
 function scheduleNotifications(formData){
     if(!formData.alertsEnabled) return;
