@@ -18,6 +18,7 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
         const end = new Date(booking.endTime).getTime();
 
         const fiveMin = 5 * 60 * 1000;
+        const oneMin = 60*1000;
 
         const userDoc = await db.collection("users").doc(booking.userId).get();
         const token = userDoc.data()?.fcmToken;
@@ -25,23 +26,23 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
         if (!token) return;
 
         // ⏳ 5 MIN BEFORE START
-        if (start - fiveMin <= now && start > now) {
+        if (now>= (start - fiveMin)&& now<= (start -fiveMin+oneMin)&&!booking.startNotified) {
             await admin.messaging().send({
                 token,
                 notification: {
                     title: "⏳ Booking Starting Soon",
-                    body: `${booking.service} starts in 5 minutes`
+                    body: `${booking.service} as ${booking.floor}starts in 5 minutes`
                 }
             });
         }
 
         // ⚠️ 5 MIN BEFORE END
-        if (end - fiveMin <= now && end > now) {
+        if (now>=(end - fiveMin)&&now<=(end-fiveMin+oneMin)&&!booking.endNotified) {
             await admin.messaging().send({
                 token,
                 notification: {
                     title: "⚠️ Almost Done",
-                    body: `${booking.service} ends in 5 minutes`
+                    body: `${booking.service} at ${booking.floors} ends in 5 minutes`
                 }
             });
         }
@@ -54,7 +55,7 @@ if (now >= end && !booking.finishedNotified) {
         token,
         notification: {
             title: "✅ Finished",
-            body: `${booking.service} is done!`
+            body: `${booking.service} at ${booking.floor} is done!`
         }
     });
 
