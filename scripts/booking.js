@@ -321,10 +321,11 @@ async function setupFCM() {
 
 setupFCM();
 onMessage(messaging, (payload) => {
-    console.log("Foreground message:", payload);
+    const n = payload.notification;
+    if(!n) return;
 
-    new Notification(payload.notification.title, {
-        body: payload.notification.body,
+    new Notification(n.title, {
+        body: n.body,
         icon: "/icons/icon-192.png"
     });
 });

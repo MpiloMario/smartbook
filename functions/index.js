@@ -12,7 +12,7 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
     for(const doc of snapshot.docs){
         const booking = doc.data();
 
-        if (!booking.alertsEnabled) return;
+        if (!booking.alertsEnabled) continue;
 
         const start = new Date(booking.startTime).getTime();
         const end = new Date(booking.endTime).getTime();
@@ -23,7 +23,7 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
         const userDoc = await db.collection("users").doc(booking.userId).get();
         const token = userDoc.data()?.fcmToken;
 
-        if (!token) return;
+        if (!token) continue;
 
         // ⏳ 5 MIN BEFORE START
         if (now>= (start - fiveMin)&& now<= (start -fiveMin+oneMin)&&!booking.startNotified) {
@@ -31,9 +31,10 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
                 token,
                 notification: {
                     title: "⏳ Booking Starting Soon",
-                    body: `${booking.service} as ${booking.floor}starts in 5 minutes`
+                    body: `${booking.service} as ${booking.floor} starts in 5 minutes`
                 }
             });
+            await ref.update({ startNotified: true }); // ✅ prevent duplicates
         }
 
         // ⚠️ 5 MIN BEFORE END
@@ -42,9 +43,10 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
                 token,
                 notification: {
                     title: "⚠️ Almost Done",
-                    body: `${booking.service} at ${booking.floors} ends in 5 minutes`
+                    body: `${booking.service} at ${booking.floor} ends in 5 minutes`
                 }
             });
+            await ref.update({ endNotified: true }); // ✅ prevent duplicates
         }
 
         const ref = db.collection("bookings").doc(doc.id);

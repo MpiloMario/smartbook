@@ -21,11 +21,26 @@ onAuthStateChanged(auth, async (user) => {
         bookings = await getBookings();
         usersMap = await getUsers(); // ✅ NEW
 
+        markOldBookingsAsSeen(bookings);
+        setInterval(checkNotifications, 30000); // every 30 seconds
+
         updateStats();
         renderBookings();
     }
 });
-setInterval(checkNotifications, 30000); // every 30 seconds
+function markOldBookingsAsSeen(bookings) {
+    const now = Date.now();
+    bookings.forEach(b => {
+        const start = new Date(b.startTime).getTime();
+        const end = new Date(b.endTime).getTime();
+        const fiveMin = 5 * 60 * 1000;
+
+        // If the window for this notification has already passed, mark it silently
+        if (start - fiveMin < now) localStorage.setItem(`start-${b.id}`, "true");
+        if (end - fiveMin < now)   localStorage.setItem(`end-${b.id}`, "true");
+        if (now >= end)            localStorage.setItem(`done-${b.id}`, "true");
+    });
+}
 
 function checkNotifications() {
     const now = Date.now();
