@@ -235,7 +235,13 @@ function scheduleNotifications(formData){
             showLocalNotification("⚠️ Almost Done", `${formData.service} ends in 5 minutes`);
         }, endWarning - now);
     }
-
+    // 🚀 Booking started — NEW
+    if (start > now) {
+        setTimeout(() => {
+            showLocalNotification("🚀 Booking Started",
+                `${formData.service} has started! You have ${formData.duration} minutes.`);
+        }, start - now);
+    }
     // ⏰ FINISHED
     if (end > now) {
         setTimeout(() => {

@@ -77,6 +77,11 @@ function checkNotifications() {
             notifyUser(`⚠️ ${b.service} ends in 5 minutes`);
             localStorage.setItem(endKey, "true");
         }
+        // 🚀 STARTED
+        if (start <= now && now <= start + fiveMin && !localStorage.getItem(startedKey)) {
+            notifyUser(`🚀 ${b.service} has started! You have ${b.duration} minutes.`);
+            localStorage.setItem(startedKey, "true");
+        }
 
         // ✅ FINISHED
         if (

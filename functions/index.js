@@ -48,9 +48,18 @@ exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
             });
             await ref.update({ endNotified: true }); // ✅ prevent duplicates
         }
-
+        //Booking Started
         const ref = db.collection("bookings").doc(doc.id);
-
+        if (now >= start && now <= (start + oneMin) && !booking.startedNotified) {
+            await admin.messaging().send({
+                token,
+                notification: {
+                    title: "🚀 Booking Started",
+                    body: `${booking.service} on ${booking.floor} has started! You have ${booking.duration} minutes.`
+                }
+            });
+            await ref.update({ startedNotified: true });
+        }
 // Example for "finished"
 if (now >= end && !booking.finishedNotified) {
     await admin.messaging().send({
