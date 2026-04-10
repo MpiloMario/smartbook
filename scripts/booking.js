@@ -202,7 +202,7 @@ function showLocalNotification(title, body) {
     if (Notification.permission === "granted") {
         new Notification(title, {
             body: body,
-            icon: "/icons/icon-192.png"
+            icon: "/icons/icon-144.png"
         });
     }
 
