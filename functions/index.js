@@ -3,74 +3,96 @@ const admin = require("firebase-admin");
 
 admin.initializeApp();
 
-exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
-    const now = Date.now();
-    const db = admin.firestore();
+async function sendToUserTokens(userDoc, notification) {
+  const userData = userDoc.data();
 
-    const snapshot = await db.collection("bookings").get();
+  const tokensMap = userData?.fcmTokens || {};
+  const oldToken = userData?.fcmToken;
 
-    for(const doc of snapshot.docs){
-        const booking = doc.data();
+  let tokens = Object.keys(tokensMap);
 
-        if (!booking.alertsEnabled) continue;
+  if (oldToken && !tokens.includes(oldToken)) {
+    tokens.push(oldToken);
+  }
 
-        const start = new Date(booking.startTime).getTime();
-        const end = new Date(booking.endTime).getTime();
+  if (!tokens.length) return;
 
-        const fiveMin = 5 * 60 * 1000;
-        const oneMin = 60*1000;
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens,
+    notification
+  });
 
-        const userDoc = await db.collection("users").doc(booking.userId).get();
-        const token = userDoc.data()?.fcmToken;
-
-        if (!token) continue;
-
-        // ⏳ 5 MIN BEFORE START
-        if (now>= (start - fiveMin)&& now<= (start -fiveMin+oneMin)&&!booking.startNotified) {
-            await admin.messaging().send({
-                token,
-                notification: {
-                    title: "⏳ Booking Starting Soon",
-                    body: `${booking.service} as ${booking.floor} starts in 5 minutes`
-                }
-            });
-            await ref.update({ startNotified: true }); // ✅ prevent duplicates
-        }
-
-        // ⚠️ 5 MIN BEFORE END
-        if (now>=(end - fiveMin)&&now<=(end-fiveMin+oneMin)&&!booking.endNotified) {
-            await admin.messaging().send({
-                token,
-                notification: {
-                    title: "⚠️ Almost Done",
-                    body: `${booking.service} at ${booking.floor} ends in 5 minutes`
-                }
-            });
-            await ref.update({ endNotified: true }); // ✅ prevent duplicates
-        }
-        //Booking Started
-        const ref = db.collection("bookings").doc(doc.id);
-        if (now >= start && now <= (start + oneMin) && !booking.startedNotified) {
-            await admin.messaging().send({
-                token,
-                notification: {
-                    title: "🚀 Booking Started",
-                    body: `${booking.service} on ${booking.floor} has started! You have ${booking.duration} minutes.`
-                }
-            });
-            await ref.update({ startedNotified: true });
-        }
-// Example for "finished"
-if (now >= end && !booking.finishedNotified) {
-    await admin.messaging().send({
-        token,
-        notification: {
-            title: "✅ Finished",
-            body: `${booking.service} at ${booking.floor} is done!`
-        }
-    });
-
-    await ref.update({ finishedNotified: true }); // ✅ prevent duplicates
+  console.log("Sent:", response.successCount, "Failed:", response.failureCount);
 }
-    };
+
+exports.sendBookingReminders = onSchedule("every 1 minutes", async () => {
+  const now = Date.now();
+  const db = admin.firestore();
+
+  const snapshot = await db.collection("bookings").get();
+
+  for (const doc of snapshot.docs) {
+    const booking = doc.data();
+    const ref = db.collection("bookings").doc(doc.id);
+
+    if (!booking.alertsEnabled) continue;
+
+    const start = new Date(booking.startTime).getTime();
+    const end = new Date(booking.endTime).getTime();
+
+    const fiveMin = 5 * 60 * 1000;
+    const oneMin = 60 * 1000;
+
+    const userDoc = await db.collection("users").doc(booking.userId).get();
+
+    if (!userDoc.exists) continue;
+
+    if (
+      now >= start - fiveMin &&
+      now <= start - fiveMin + oneMin &&
+      !booking.startNotified
+    ) {
+      await sendToUserTokens(userDoc, {
+        title: "⏳ Booking Starting Soon",
+        body: `${booking.service} at ${booking.floor} starts in 5 minutes`
+      });
+
+      await ref.update({ startNotified: true });
+    }
+
+    if (
+      now >= end - fiveMin &&
+      now <= end - fiveMin + oneMin &&
+      !booking.endNotified
+    ) {
+      await sendToUserTokens(userDoc, {
+        title: "⚠️ Almost Done",
+        body: `${booking.service} at ${booking.floor} ends in 5 minutes`
+      });
+
+      await ref.update({ endNotified: true });
+    }
+
+    if (
+      now >= start &&
+      now <= start + oneMin &&
+      !booking.startedNotified
+    ) {
+      await sendToUserTokens(userDoc, {
+        title: "🚀 Booking Started",
+        body: `${booking.service} on ${booking.floor} has started! You have ${booking.duration} minutes.`
+      });
+
+      await ref.update({ startedNotified: true });
+    }
+
+    if (now >= end && !booking.finishedNotified) {
+      await sendToUserTokens(userDoc, {
+        title: "✅ Finished",
+        body: `${booking.service} at ${booking.floor} is done!`
+      });
+
+      await ref.update({ finishedNotified: true });
+    }
+  }
 });

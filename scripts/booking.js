@@ -279,11 +279,11 @@ document.addEventListener("click", () => {
         audio.currentTime = 0;
     }).catch(() => {});
 }, { once: true });
-if ("serviceWorker" in navigator) {
+/*if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
     .then(() => console.log("Service Worker Registered"))
     .catch(err => console.error("SW failed:", err));
-}
+}*/
 // Toggle mobile menu
 document.getElementById("mobile-menu-btn").addEventListener("click", () => {
     document.getElementById("mobile-menu").classList.toggle("hidden");

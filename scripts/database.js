@@ -166,11 +166,15 @@ export async function deleteBooking(id) {
 
 export async function saveUserToken(token) {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user || !token) return;
 
     await setDoc(doc(db, "users", user.uid), {
-        fcmToken: token
+        fcmTokens: {
+            [token]: true
+        }
     }, { merge: true });
+
+    console.log("✅ FCM token saved for user:", user.uid);
 }
 export function showToast(message) {
     const toast = document.createElement("div");
