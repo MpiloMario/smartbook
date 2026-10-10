@@ -15,6 +15,7 @@ import {
     getDoc,
     doc,
     setDoc,
+    updateDoc,
     deleteDoc,
     query,
     where
@@ -121,6 +122,16 @@ export async function isSlotAvailable(newBooking) {
     snapshot.forEach(doc => {
         const existing = doc.data();
 
+        // 🧺 Only bookings on the same machine conflict —
+        // "Both" blocks every machine, otherwise services must match.
+        // (Same logic as updateAvailableSlots in booking.js)
+        const isSameMachine =
+            newBooking.service === "Both" ||
+            existing.service === "Both" ||
+            existing.service === newBooking.service;
+
+        if (!isSameMachine) return;
+
         const existingStart = new Date(existing.startTime);
         const existingEnd = new Date(existing.endTime);
 
@@ -164,6 +175,20 @@ export async function deleteBooking(id) {
     
 }
 
+// ⏱ EXTEND A BOOKING'S DURATION (used by the dashboard alert modal)
+export async function extendBookingTime(id, minutes) {
+    const ref = doc(db, "bookings", id);
+    const snapshot = await getDoc(ref);
+
+    if (!snapshot.exists()) throw new Error("Booking not found");
+
+    const currentEnd = new Date(snapshot.data().endTime).getTime();
+
+    await updateDoc(ref, {
+        endTime: new Date(currentEnd + minutes * 60000).toISOString()
+    });
+}
+
 export async function saveUserToken(token) {
     const user = auth.currentUser;
     if (!user || !token) return;
@@ -183,13 +208,16 @@ export function showToast(message) {
         position: fixed;
         bottom: 24px;
         right: 24px;
-        background: #4f46e5;
-        color: white;
+        background: rgba(15, 23, 42, 0.92);
+        color: #e2e8f0;
+        border: 1px solid rgba(139, 92, 246, 0.45);
+        box-shadow: 0 12px 40px -8px rgba(139, 92, 246, 0.45);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         padding: 14px 20px;
         border-radius: 12px;
         font-size: 14px;
         font-weight: 500;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         z-index: 9999;
         transition: opacity 0.4s ease;
     `;
@@ -199,4 +227,32 @@ export function showToast(message) {
         toast.style.opacity = "0";
         setTimeout(() => toast.remove(), 400);
     }, 6000);
+}
+
+// 🔔 Show a notification through the service worker — REQUIRED on Android,
+// where `new Notification()` is an illegal constructor. Falls back to the
+// constructor on desktop browsers without a service worker.
+export async function showAppNotification(title, options = {}) {
+    const defaults = {
+        icon: "/icons/icon-256.png",
+        badge: "/icons/icon-72.png",
+        vibrate: [200, 100, 200]
+    };
+
+    try {
+        if ("serviceWorker" in navigator) {
+            const registration = await navigator.serviceWorker.getRegistration();
+
+            if (registration) {
+                await registration.showNotification(title, { ...defaults, ...options });
+                return;
+            }
+        }
+
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification(title, { ...defaults, ...options });
+        }
+    } catch (error) {
+        console.warn("Notification failed:", error);
+    }
 }

@@ -5,18 +5,88 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Appointment - SmartBook</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme=color" content="#4f46e5">
+    <meta name="theme-color" content="#0b1120">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+                        display: ['Space Grotesk', 'Inter', 'sans-serif']
+                    },
+                    colors: {
+                        midnight: '#0b1120'
+                    }
+                }
+            }
         }
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: #e2e8f0;
+            -webkit-font-smoothing: antialiased;
+        }
+        ::selection { background: rgba(139, 92, 246, .4); }
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0b1120; }
+        ::-webkit-scrollbar-thumb { background: #293548; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b4a63; }
+
+        select option { background: #0f172a; color: #e2e8f0; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.8); cursor: pointer; }
+
+        .glass {
+            background: rgba(15, 23, 42, .6);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #a78bfa 0%, #22d3ee 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .btn-neon {
+            background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+            box-shadow: 0 8px 30px -6px rgba(139, 92, 246, .55);
+            transition: all .25s ease;
+        }
+        .btn-neon:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 44px -6px rgba(139, 92, 246, .75);
+        }
+        .card {
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .08);
+        }
+        .input-dark {
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid rgba(255, 255, 255, .1);
+            color: #e2e8f0;
+            transition: all .2s ease;
+        }
+        .input-dark:focus {
+            outline: none;
+            border-color: rgba(34, 211, 238, .6);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, .15);
+        }
+        .sidebar-glow {
+            background: linear-gradient(160deg, rgba(139, 92, 246, .35) 0%, rgba(217, 70, 239, .18) 55%, rgba(34, 211, 238, .12) 100%);
+        }
+        .mesh-page {
+            background:
+                radial-gradient(600px circle at 85% 10%, rgba(139, 92, 246, .12), transparent 55%),
+                radial-gradient(500px circle at 5% 60%, rgba(34, 211, 238, .08), transparent 55%);
+        }
+        .animate-fade-in { animation: fadeIn .5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -36,36 +106,38 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 </script>
-<body class="bg-gray-50">
+<body class="bg-midnight mesh-page">
 
     <!-- Navigation -->
-    <nav class="fixed w-full z-50 glass-effect border-b border-gray-200">
+    <nav class="fixed w-full z-50 glass border-b border-white/5">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <a href="index.html" class="flex items-center space-x-2">
-                    <i data-lucide="calendar-check" class="w-8 h-8 text-indigo-600"></i>
-                    <span class="text-xl font-bold text-gray-900">SmartBook</span>
+                <a href="index.html" class="flex items-center space-x-2.5">
+                    <span class="w-9 h-9 rounded-xl btn-neon flex items-center justify-center">
+                        <i data-lucide="calendar-check" class="w-5 h-5 text-white"></i>
+                    </span>
+                    <span class="font-display text-xl font-bold text-white tracking-tight">Smart<span class="gradient-text">Book</span></span>
                 </a>
                 <div class="hidden md:flex flex-wrap gap-4">
-                    <a href="index.html" class="text-gray-700 hover:text-indigo-600 font-medium transition">Home</a>
-                    <a href="index.html#services" class="text-gray-700 hover:text-indigo-600 font-medium transition">Services</a>
-                    <a href="booking.html" class="text-indigo-600 font-medium transition">Book Now</a>
-                    <a href="dashboard.html" class="text-gray-700 hover:text-indigo-600 font-medium transition">My Appointments</a>
+                    <a href="index.html" class="text-slate-300 hover:text-white font-medium transition">Home</a>
+                    <a href="index.html#services" class="text-slate-300 hover:text-white font-medium transition">Services</a>
+                    <a href="booking.html" class="text-cyan-300 font-medium transition">Book Now</a>
+                    <a href="dashboard.html" class="text-slate-300 hover:text-white font-medium transition">My Appointments</a>
                 </div>
                 <div class="md:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="p-2 rounded-lg">
+                    <button id="mobile-menu-btn" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5 transition">
                         <i data-lucide="menu" class="w-6 h-6"></i>
                     </button>
                 </div>
             </div>
         </div>
                         <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden glass-effect border-t border-gray-200">
-            <div class="px-4 pt-2 pb-4 space-y-2">
-                <a href="index.html" class="block px-3 py-2 rounded-md hover:bg-gray-100">Home</a>
-                <a href="index.html#services" class="block px-3 py-2 rounded-md hover:bg-gray-100">Services</a>
-                <a href="booking.html" class="block px-3 py-2 rounded-md hover:bg-gray-100">Book Now</a>
-                <a href="dashboard.html" class="block px-3 py-2 rounded-md hover:bg-gray-100">My Appointments</a>
+        <div id="mobile-menu" class="hidden md:hidden glass border-t border-white/5">
+            <div class="px-4 pt-2 pb-4 space-y-1">
+                <a href="index.html" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Home</a>
+                <a href="index.html#services" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Services</a>
+                <a href="booking.html" class="block px-3 py-2 rounded-lg text-cyan-300">Book Now</a>
+                <a href="dashboard.html" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">My Appointments</a>
             </div>
         </div>
     </nav>
@@ -74,42 +146,42 @@ onAuthStateChanged(auth, (user) => {
     <section class="pt-32 pb-20">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
-                <h1 class="text-4xl font-bold text-gray-900 mb-4">Book Your Appointment</h1>
-                <p class="text-gray-600">Fill in the details below to schedule your appointment with automatic duration tracking.</p>
+                <h1 class="font-display text-4xl font-bold text-white mb-4">Book Your <span class="gradient-text">Appointment</span></h1>
+                <p class="text-slate-400">Fill in the details below to schedule your appointment with automatic duration tracking.</p>
             </div>
 
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+            <div class="card rounded-3xl overflow-hidden shadow-2xl shadow-violet-500/5">
                 <div class="grid md:grid-cols-5">
                     <!-- Sidebar -->
-                    <div class="md:col-span-2 gradient-bg p-8 text-white">
-                        <h3 class="text-2xl font-bold mb-6">Booking Details</h3>
+                    <div class="md:col-span-2 sidebar-glow p-8 text-white border-b md:border-b-0 md:border-r border-white/10">
+                        <h3 class="font-display text-2xl font-bold mb-6">Booking Details</h3>
                         <div class="space-y-6">
                             <div class="flex items-start space-x-3">
-                                <i data-lucide="info" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <i data-lucide="info" class="w-5 h-5 mt-1 flex-shrink-0 text-cyan-300"></i>
                                 <div>
                                     <p class="font-medium">Automatic Alerts</p>
-                                    <p class="text-sm text-indigo-200">You'll receive notifications when your appointment ends</p>
+                                    <p class="text-sm text-slate-300/80">You'll receive notifications when your appointment ends</p>
                                 </div>
                             </div>
                             <div class="flex items-start space-x-3">
-                                <i data-lucide="clock" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <i data-lucide="clock" class="w-5 h-5 mt-1 flex-shrink-0 text-cyan-300"></i>
                                 <div>
                                     <p class="font-medium">Duration Tracking</p>
-                                    <p class="text-sm text-indigo-200">Real-time countdown in your dashboard</p>
+                                    <p class="text-sm text-slate-300/80">Real-time countdown in your dashboard</p>
                                 </div>
                             </div>
                             <div class="flex items-start space-x-3">
-                                <i data-lucide="bell" class="w-5 h-5 mt-1 flex-shrink-0"></i>
+                                <i data-lucide="bell" class="w-5 h-5 mt-1 flex-shrink-0 text-cyan-300"></i>
                                 <div>
                                     <p class="font-medium">Smart Reminders</p>
-                                    <p class="text-sm text-indigo-200">Browser and sound alerts included</p>
+                                    <p class="text-sm text-slate-300/80">Browser and sound alerts included</p>
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="mt-12 p-4 bg-white/10 rounded-xl backdrop-blur">
-                            <p class="text-sm font-medium mb-2">Selected Service</p>
-                            <p id="selectedServiceDisplay" class="text-lg font-bold">...</p>
+                        <div class="mt-12 p-4 glass border border-white/10 rounded-xl">
+                            <p class="text-sm text-slate-300/80 mb-2">Selected Service</p>
+                            <p id="selectedServiceDisplay" class="text-lg font-bold gradient-text">...</p>
                         </div>
                     </div>
 
@@ -117,8 +189,8 @@ onAuthStateChanged(auth, (user) => {
                     <div class="md:col-span-3 p-8">
                         <form id="bookingForm" class="space-y-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Service Type</label>
-                                <select id="serviceSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Service Type</label>
+                                <select id="serviceSelect" class="input-dark w-full px-4 py-3 rounded-xl">
                                     <option value="Washing Machine">Washing Machine</option>
                                     <option value="Drying Machine">Drying Machine</option>
                                     <option value="Both">Dryer & Washing Machine</option>
@@ -126,8 +198,8 @@ onAuthStateChanged(auth, (user) => {
                                 </select>
                             </div>
                             <div id="floorCont">
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-                                <select id="floorSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Floor</label>
+                                <select id="floorSelect" class="input-dark w-full px-4 py-3 rounded-xl">
                                     <option value="1st floor">1st Floor</option>
                                     <option value="3rd floor">3rd Floor</option>
                                     <option value="5th floor">5th Floor</option>
@@ -136,35 +208,35 @@ onAuthStateChanged(auth, (user) => {
 
                             <div class="grid md:grid-cols-2 gap-6">
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                                    <input type="date" id="dateInput" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Date</label>
+                                    <input type="date" id="dateInput" required class="input-dark w-full px-4 py-3 rounded-xl">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time</label>
-                                    <select id="timeInput" class="w-full px-4 py-2 border rounded-lg"></select>
+                                    <label class="block text-sm font-medium text-slate-300 mb-2">Time</label>
+                                    <select id="timeInput" class="input-dark w-full px-4 py-2 rounded-xl"></select>
                                 </div>
                             </div>
 
                             <div id="durationContainer">
-                                <label id="durationTaxt" class="block text-sm font-medium text-gray-700 mb-2">Duration</label>
-                                <select id="durationSelect" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition">
+                                <label id="durationTaxt" class="block text-sm font-medium text-slate-300 mb-2">Duration</label>
+                                <select id="durationSelect" class="input-dark w-full px-4 py-3 rounded-xl">
                                     <option value="30">30 minutes</option>
                                     <option value="60" selected>1 hour</option>
                                 </select>
-                                <p id="durationText" class="text-xs text-gray-500 mt-1">You'll be alerted when this duration ends</p>
+                                <p id="durationText" class="text-xs text-slate-500 mt-1">You'll be alerted when this duration ends</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-                                <textarea id="notesField" rows="3" class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition" placeholder="Any special requirements..."></textarea>
+                                <label class="block text-sm font-medium text-slate-300 mb-2">Notes (Optional)</label>
+                                <textarea id="notesField" rows="3" class="input-dark w-full px-4 py-3 rounded-xl" placeholder="Any special requirements..."></textarea>
                             </div>
 
                             <div class="flex items-center space-x-2">
-                                <input type="checkbox" id="enableAlerts" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <label for="enableAlerts" class="text-sm text-gray-700">Enable end-of-duration alerts (sound + notification)</label>
+                                <input type="checkbox" id="enableAlerts" checked class="w-4 h-4 rounded accent-violet-500 focus:ring-cyan-400/50">
+                                <label for="enableAlerts" class="text-sm text-slate-300">Enable end-of-duration alerts (sound + notification)</label>
                             </div>
 
-                            <button type="submit"  class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <button type="submit" class="btn-neon w-full text-white py-4 rounded-xl font-bold text-lg">
                                 Confirm Booking
                             </button>
                         </form>
@@ -175,18 +247,18 @@ onAuthStateChanged(auth, (user) => {
     </section>
 
     <!-- Success Modal -->
-    <div id="successModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center animate-fade-in">
-            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="check" class="w-10 h-10 text-green-600"></i>
+    <div id="successModal" class="fixed inset-0 bg-midnight/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="card rounded-3xl p-8 max-w-md w-full mx-4 text-center animate-fade-in shadow-2xl shadow-violet-500/20">
+            <div class="w-20 h-20 bg-emerald-400/10 border border-emerald-400/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="check" class="w-10 h-10 text-emerald-300"></i>
             </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
-            <p class="text-gray-600 mb-6">Your appointment has been scheduled. You'll receive alerts when the duration ends.</p>
+            <h3 class="font-display text-2xl font-bold text-white mb-2">Booking Confirmed!</h3>
+            <p class="text-slate-400 mb-6">Your appointment has been scheduled. You'll receive alerts when the duration ends.</p>
             <div class="space-y-3">
-                <a href="dashboard.html" class="block w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">
+                <a href="dashboard.html" class="btn-neon block w-full text-white py-3 rounded-xl font-bold">
                     View Dashboard
                 </a>
-                <button onclick="closeModal()" class="block w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition">
+                <button onclick="closeModal()" class="block w-full bg-white/5 border border-white/10 text-slate-200 py-3 rounded-xl font-bold hover:bg-white/10 hover:text-white transition">
                     Book Another
                 </button>
             </div>

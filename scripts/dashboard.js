@@ -1,8 +1,12 @@
-import { auth, getBookings, getUsers,deleteBooking,showToast } from "./database.js";
+import { auth, getBookings, getUsers,deleteBooking,showToast,showAppNotification,saveUserToken,extendBookingTime } from "./database.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getMessaging, getToken } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 lucide.createIcons();
+
+const messaging = getMessaging();
 
 let currentUser = null;
 let bookings = [];
@@ -37,6 +41,7 @@ function markOldBookingsAsSeen(bookings) {
 
         // If the window for this notification has already passed, mark it silently
         if (start - fiveMin < now) localStorage.setItem(`start-${b.id}`, "true");
+        if (start + fiveMin < now) localStorage.setItem(`started-${b.id}`, "true");
         if (end - fiveMin < now)   localStorage.setItem(`end-${b.id}`, "true");
         if (now >= end)            localStorage.setItem(`done-${b.id}`, "true");
     });
@@ -55,6 +60,7 @@ function checkNotifications() {
 
         // Unique keys to avoid duplicate alerts
         const startKey = `start-${b.id}`;
+        const startedKey = `started-${b.id}`;
         const endKey = `end-${b.id}`;
         const doneKey = `done-${b.id}`;
 
@@ -93,30 +99,62 @@ function checkNotifications() {
         }
     });
 }
-function requestNotificationPermission() {
-        if (!("Notification" in window)) {
-            alert("This browser does not support desktop notification");
-        } else if (Notification.permission === "granted") {
-            console.log("Notification permission already granted.");
-        } else if (Notification.permission !== "denied") {
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    console.log("Notification permission granted!");
-                } else {
-                    console.log("Notification permission denied.");
-                }
-            });
+function enablePushNotifications() {
+    if (!("Notification" in window)) {
+        alert("This browser does not support desktop notifications");
+        return;
+    }
+
+    if (Notification.permission === "denied") {
+        showToast("🔕 Notifications are blocked in your browser settings");
+        return;
+    }
+
+    Notification.requestPermission().then(async (permission) => {
+        if (permission !== "granted") {
+            console.log("Notification permission denied.");
+            return;
         }
-    }
-    document.getElementById('alert').addEventListener('click',requestNotificationPermission);
+
+        console.log("Notification permission granted!");
+
+        try {
+            // ✅ Register the FCM service worker in its own scope so it does not
+            // replace /sw.js — both service workers then coexist.
+            const registration = await navigator.serviceWorker.register(
+                "/firebase-messaging-sw.js",
+                { scope: "/fcm-push-scope/" }
+            );
+
+            const token = await getToken(messaging, {
+                vapidKey: "BCEWQ3ZEFYTmiG7UWUw5D8x6-0TlmTkjhR1I2AROSeWHVDVl1MwJXxmPqj3-wdkicQnJARjzkJMXPvBMvTsxKIc",
+                serviceWorkerRegistration: registration
+            });
+
+            if (!token) {
+                console.log("❌ No FCM token received");
+                return;
+            }
+
+            // 🔥 Without this the server has no token to push to!
+            await saveUserToken(token);
+
+            showToast("🔔 Alerts enabled — you'll be notified about your bookings");
+        } catch (error) {
+            console.error("❌ FCM error:", error);
+        }
+    });
+}
+
+// Wire up every "Enable Alerts" button (desktop + mobile menu)
+document.querySelectorAll(".js-enable-alerts").forEach(btn => {
+    btn.addEventListener("click", enablePushNotifications);
+});
+
 function notifyUser(message) {
-    // 🔔 Browser notification (if permitted)
-    if (Notification.permission === "granted") {
-        new Notification("SmartBook", {
-            body: message,
-            icon: "icons/icon-256.png"
-        });
-    }
+    // 🔔 Browser notification via the service worker — `new Notification()`
+    // throws "Illegal constructor" on Android Chrome
+    showAppNotification("SmartBook", { body: message });
 
     // 🔊 Sound
     const audio = new Audio("images/alarm.wav");
@@ -158,9 +196,9 @@ window.filterBookings = function(filter) {
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
         if (btn.dataset.tab === filter) {
-            btn.classList.add("bg-white", "text-gray-900", "shadow-sm");
+            btn.classList.add("tab-active");
         } else {
-            btn.classList.remove("bg-white", "text-gray-900", "shadow-sm");
+            btn.classList.remove("tab-active");
         }
     });
 
@@ -202,6 +240,13 @@ function renderBookings() {
 
     emptyState.classList.add("hidden");
 
+    // 🎨 Dark-theme status pill styles per state
+    const statusStyles = {
+        "In Progress": "bg-emerald-400/10 border border-emerald-400/30 text-emerald-300",
+        "Completed":   "bg-white/5 border border-white/10 text-slate-400",
+        "Upcoming":    "bg-violet-400/10 border border-violet-400/30 text-violet-300"
+    };
+
     container.innerHTML = filtered.map(booking => {
         const start = new Date(booking.startTime);
         const end = new Date(booking.endTime);
@@ -210,43 +255,42 @@ function renderBookings() {
         const isCompleted = now > end || booking.status === "completed";
 
         let status = isActive ? "In Progress" : isCompleted ? "Completed" : "Upcoming";
-        let color = isActive ? "green" : isCompleted ? "gray" : "indigo";
 
         return `
-            <div class="bg-white p-6 rounded-2xl shadow border">
-                <span class="text-xs px-2 py-1 rounded bg-${color}-100 text-${color}-700">
+            <div class="card p-6 rounded-2xl">
+                <span class="text-xs px-2 py-1 rounded-full ${statusStyles[status]}">
                     ${status}
                 </span>
 
-                <h3 class="font-bold text-lg mt-2">${booking.service}</h3>
+                <h3 class="font-display font-bold text-lg mt-3 text-white">${booking.service}</h3>
 
-                <p class="text-sm text-gray-600 mt-2">
+                <p class="text-sm text-slate-400 mt-2">
                     ${new Date(booking.date).toLocaleDateString()} - ${booking.time}
                 </p>
 
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-slate-500">
                     Floor: ${booking.floor}
                 </p>
                 ${booking.service === "Maintenance Support" && booking.notes ? `
-                <p class="text-sm text-gray-500 mt-2 bg-yellow-50 p-2 rounded">
+                <p class="text-sm text-amber-200/90 mt-2 bg-amber-400/10 border border-amber-400/20 p-2 rounded-lg">
                     🛠 Room ${booking.roomNumber} : ${booking.notes}
                 </p>
             ` : ""}
 
-                <p class="text-xs text-gray-500">
+                <p class="text-xs text-slate-500">
                     User: ${usersMap[booking.userId] || "Unknown"}
                 </p>
 
-                <p class="text-xs text-gray-500 mt-1">
+                <p class="text-xs text-slate-500 mt-1">
                     Duration: ${booking.duration} mins
                 </p>
                 ${booking.userId === currentUser.uid ? `
                     <button onclick="deleteMyBooking('${booking.id}')" 
-                        class="bg-gradient-to-r from-red-600 to-red-500 
+                        class="mt-4 bg-gradient-to-r from-red-500 to-rose-500 
                text-white px-4 py-1.5 rounded-lg font-medium 
-               shadow-md hover:shadow-lg 
-               transition transform hover:scale-105 active:scale-95 
-               focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2">
+               shadow-lg shadow-red-500/25 
+               transition transform hover:scale-105 hover:shadow-red-500/40 active:scale-95 
+               focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-midnight">
                         Delete
                     </button>
                 ` : ""}
@@ -263,15 +307,51 @@ window.deleteMyBooking = async function(id) {
 
     try {
         await deleteBooking(id);
-        alert("Deleted!");
+        showToast("🗑 Booking deleted");
 
         bookings = bookings.filter(b => b.id !== id);
         renderBookings();
         updateStats();
     } catch (err) {
         console.error(err);
-        alert("Error deleting booking");
+        showToast("Error deleting booking");
     }
+};
+
+// 🚨 ALERT MODAL ACTIONS
+window.dismissAlert = function() {
+    const modal = document.getElementById("alertModal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+};
+
+window.extendBooking = async function() {
+    // Extend the current user's active booking by 15 minutes
+    const now = new Date();
+    const mine = bookings.find(b =>
+        b.userId === currentUser.uid &&
+        new Date(b.startTime) <= now && now < new Date(b.endTime)
+    );
+
+    if (!mine) {
+        showToast("No active booking to extend");
+        window.dismissAlert();
+        return;
+    }
+
+    try {
+        await extendBookingTime(mine.id, 15);
+        showToast("⏱ Booking extended by 15 minutes");
+
+        mine.endTime = new Date(new Date(mine.endTime).getTime() + 15 * 60000).toISOString();
+        updateStats();
+        renderBookings();
+    } catch (err) {
+        console.error(err);
+        showToast("Could not extend booking");
+    }
+
+    window.dismissAlert();
 };
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")

@@ -1,4 +1,4 @@
-import { auth, saveBooking, isSlotAvailable, getUserData,getBookingsByDate,saveUserToken,showToast } from "./database.js";
+import { auth, saveBooking, isSlotAvailable, getUserData,getBookingsByDate,saveUserToken,showToast,showAppNotification } from "./database.js";
 import { onAuthStateChanged } 
 from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getMessaging, getToken, onMessage } 
@@ -27,15 +27,27 @@ const userReady = new Promise(resolve =>{
 let currentUser = null;
 let currentUserData = null;
 
-// 🔐 AUTH
+// 🔐 AUTH (single handler — enables the form and unblocks booking submission)
+const submitBtn = document.querySelector("button[type='submit']");
+submitBtn.disabled = true;
+
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = "login.html";
-    } else {
-        currentUser = user;
-        currentUserData = await getUserData(user.uid);
-        console.log("User is logged in:", currentUserData);
-        resolveUserReady();
+        return;
+    }
+
+    currentUser = user;
+    currentUserData = await getUserData(user.uid);
+    console.log("User is logged in:", currentUserData);
+
+    submitBtn.disabled = false; // ✅ enable
+    resolveUserReady();
+
+    // 🔔 Permission already granted earlier → silently refresh/save the token.
+    // (Never prompt on page load — mobile browsers block it and no token gets saved.)
+    if ("Notification" in window && Notification.permission === "granted") {
+        setupFCM();
     }
 });
 function populateTimeSlots(service) {
@@ -188,6 +200,10 @@ document.getElementById('bookingForm').addEventListener('submit', async function
         await saveBooking(formData); // ✅ FIXED
         scheduleNotifications(formData);
 
+        // 🔔 Best-effort: make sure an FCM token exists so push alerts work
+        // even when the app is closed (no-op if permission isn't granted yet)
+        if (formData.alertsEnabled) setupFCM();
+
         document.getElementById('successModal').classList.remove('hidden');
         document.getElementById('successModal').classList.add('flex');
 
@@ -199,12 +215,9 @@ document.getElementById('bookingForm').addEventListener('submit', async function
 });
 
 function showLocalNotification(title, body) {
-    if (Notification.permission === "granted") {
-        new Notification(title, {
-            body: body,
-            icon: "/icons/icon-144.png"
-        });
-    }
+    // 📱 Go through the service worker — `new Notification()` throws
+    // "Illegal constructor" on Android Chrome
+    showAppNotification(title, { body });
 
     const audio = new Audio("images/alarm.wav");
     audio.play().catch(() => {});
@@ -260,18 +273,6 @@ window.addEventListener("DOMContentLoaded",async ()=>{
     populateTimeSlots(service);
     await updateAvailableSlots();
 });
-const btn = document.querySelector("button[type='submit']");
-btn.disabled = true;
-
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        currentUser = user;
-        currentUserData = await getUserData(user.uid);
-
-        btn.disabled = false; // ✅ enable
-        resolveUserReady();
-    }
-});
 document.addEventListener("click", () => {
     const audio = new Audio("images/alarm.wav");
     audio.play().then(() => {
@@ -279,11 +280,12 @@ document.addEventListener("click", () => {
         audio.currentTime = 0;
     }).catch(() => {});
 }, { once: true });
-/*if ("serviceWorker" in navigator) {
+// ✅ Register the offline service worker on this page too
+if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js")
     .then(() => console.log("Service Worker Registered"))
     .catch(err => console.error("SW failed:", err));
-}*/
+}
 // Toggle mobile menu
 document.getElementById("mobile-menu-btn").addEventListener("click", () => {
     document.getElementById("mobile-menu").classList.toggle("hidden");
@@ -298,21 +300,43 @@ document.querySelectorAll("#mobile-menu a").forEach(link => {
 
 
 const messaging = getMessaging();
+
 async function setupFCM() {
     try {
-        const permission = await Notification.requestPermission();
+        if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+            console.log("❌ This browser does not support notifications");
+            return;
+        }
+
+        let permission = Notification.permission;
+
+        if (permission === "denied") {
+            console.log("❌ Notification permission denied");
+            return;
+        }
+
+        // 🙋 requestPermission() only works from a user gesture on mobile —
+        // calling it on page load is silently blocked, so no FCM token
+        // would ever be saved and the server couldn't send push alerts.
+        if (permission === "default") {
+            permission = await Notification.requestPermission();
+        }
 
         if (permission !== "granted") {
             console.log("❌ Notification permission denied");
             return;
         }
 
-        // ✅ CORRECT service worker registration
-        const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        // ✅ Register the FCM service worker in its own scope so it does not
+        // replace /sw.js (registered at root) — both workers then coexist.
+        const registration = await navigator.serviceWorker.register(
+            "/firebase-messaging-sw.js",
+            { scope: "/fcm-push-scope/" }
+        );
 
         const token = await getToken(messaging, {
             vapidKey: "BCEWQ3ZEFYTmiG7UWUw5D8x6-0TlmTkjhR1I2AROSeWHVDVl1MwJXxmPqj3-wdkicQnJARjzkJMXPvBMvTsxKIc",
-            serviceWorkerRegistration: registration // ✅ FIXED (lowercase s)
+            serviceWorkerRegistration: registration
         });
 
         if (!token) {
@@ -320,7 +344,7 @@ async function setupFCM() {
             return;
         }
 
-        console.log("✅ FCM Token:", token);
+        console.log("✅ FCM Token saved — push alerts are ready");
 
         await saveUserToken(token);
 
@@ -329,13 +353,20 @@ async function setupFCM() {
     }
 }
 
-setupFCM();
+// 🙋 Request permission from a user gesture: ticking "Enable alerts"
+document.getElementById("enableAlerts").addEventListener("change", (e) => {
+    if (e.target.checked) setupFCM();
+});
+
+// 📨 Foreground push — service worker display works on Android too
 onMessage(messaging, (payload) => {
     const n = payload.notification;
     if(!n) return;
 
-    new Notification(n.title, {
-        body: n.body,
-        icon: "/icons/icon-192.png"
-    });
+    showAppNotification(n.title, { body: n.body });
+
+    const audio = new Audio("images/alarm.wav");
+    audio.play().catch(() => {});
+
+    showToast(`${n.title}: ${n.body}`);
 });
