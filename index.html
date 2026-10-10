@@ -113,8 +113,8 @@
             <div class="hidden md:flex items-center space-x-6">
                 <a href="index.html" class="nav-link text-slate-300 hover:text-white transition">Home</a>
                 <a href="index.html#services" class="nav-link text-slate-300 hover:text-white transition">Services</a>
-                <a href="booking.html" class="nav-link text-slate-300 hover:text-white transition">Book</a>
-                <a href="dashboard.html" class="nav-link text-slate-300 hover:text-white transition">Dashboard</a>
+                <a href="booking.html" class="nav-link auth-link hidden text-slate-300 hover:text-white transition">Book</a>
+                <a href="dashboard.html" class="nav-link auth-link hidden text-slate-300 hover:text-white transition">Dashboard</a>
 
                 <div id="authSection" class="flex items-center space-x-4">
                     <!-- Filled dynamically -->
@@ -135,7 +135,7 @@
         <div class="px-4 pt-2 pb-4 space-y-1">
             <a href="index.html" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Home</a>
             <a href="index.html#services" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Services</a>
-            <a href="booking.html" class="block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Book</a>
+            <a href="booking.html" class="auth-link hidden block px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/5">Book</a>
             <div id="mobileAuthSection" class="pt-2 border-t border-white/5">
                 <!-- Filled dynamically -->
             </div>
@@ -369,6 +369,9 @@ lucide.createIcons();
 //User Greeting
 const greeting = document.getElementById("userGreeting");
 onAuthStateChanged(auth,async (user)=>{
+    // 🔒 Book/Dashboard links are only relevant when signed in
+    document.querySelectorAll(".auth-link").forEach(el => el.classList.toggle("hidden", !user));
+
     if(user){
         const userData = await getUserData(user.uid);
         greeting.textContent = `Greetings ${userData?.username || "user"}`;
